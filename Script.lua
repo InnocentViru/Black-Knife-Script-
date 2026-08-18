@@ -28,7 +28,10 @@ Mesh = "http://www.roblox.com/asset/?id=11442510"
 Texture = "http://www.roblox.com/asset/?id=11442524"
 
 NpcKill = "https://github.com/InnocentViru/Black-Knife/raw/refs/heads/main/Thorn%20Ring%20(ominous_stab_harsh.ogg)%20-%20DELTARUNE%20Chapters%203+4%20OST%20-%20Aventuras%20Demais%20(youtube).mp3"
+
 Slash = "rbxassetid://4958430453"
+Impale = "rbxassetid://5754301788"
+Bleed = "rbxassetid://71884701777530"
 
 if not isfile("ThornRing.mp3") then
     writefile("ThornRing.mp3", game:HttpGet(NpcKill))
@@ -81,7 +84,7 @@ SpecialMesh.TextureId = Texture
 SpecialMesh.Scale = Vector3.new(2.2,2.2,2.2)
 
 vfx = Instance.new("ParticleEmitter", Handle)
-vfx.Rate = 100
+vfx.Rate = 500
 vfx.Speed = NumberRange.new(0,0)
 vfx.Brightness = 10
 vfx.Lifetime = NumberRange.new(.5, .5)
@@ -96,7 +99,6 @@ vfx.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0.5, 0),
     NumberSequenceKeypoint.new(1, 1),
 })
-vfx.LightEmission = .5
 vfx.Rotation = NumberRange.new(-360, 360)
 
 att1 = Instance.new("Attachment", Handle)
@@ -115,7 +117,8 @@ trail.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(1, 1),
 })
 
-pcall(function() plr.PlayerGui["Grab_Ability"]:Destroy() end)
+pcall(function() gethui()["Grab_Ability"]:Destroy() end)
+
 ScreenGui = Instance.new("ScreenGui", gethui())
 ScreenGui.Name = "Grab_Ability"
 TextButton = Instance.new("TextButton", ScreenGui)
@@ -174,6 +177,15 @@ function blood(phrp)
     end
 end
 
+function bleedsfx(p)
+    local sound = Instance.new("Sound", p)
+    sound.SoundId = Bleed
+    sound.Volume = 5
+    sound.PlayOnRemove = true
+    sound:Destroy()
+    sound = nil
+end
+
 function bleed(phrp, phum)
     for i = 1, 30 do
         if not phum or not phum.Parent or phum.Health <= 0 then break end
@@ -185,6 +197,7 @@ function bleed(phrp, phum)
         p.Size = Vector3.new(.5,.5,.5)
         p.RotVelocity = Vector3.new(20,20,20)
         p.Velocity = Vector3.new(0, 10, 0)
+        bleedsfx(p)
 
         local at = Instance.new("Attachment", p)
         local at2 = Instance.new("Attachment", p)
@@ -230,6 +243,15 @@ function killnpc(character)
     end
 end
 
+function impalesfx()
+    local sound = Instance.new("Sound", Handle)
+    sound.SoundId = Impale
+    sound.Volume = 5
+    sound.PlayOnRemove = true
+    sound:Destroy()
+    sound = nil
+end
+
 function grabnpc(character)
     local h = character:FindFirstChild("Humanoid")
     local p = character:FindFirstChild("HumanoidRootPart")
@@ -242,6 +264,7 @@ function grabnpc(character)
         success = true
         Grabbed = true
         task.spawn(bleed, p, h)
+        impalesfx()
         GrabConnections[1] = rs.Heartbeat:Connect(function()
             if Tool.Parent == char and p.ReceiveAge == 0 then
                 p.CFrame = CFrame.new(ImpaleAtt.WorldPosition) * CFrame.Angles(math.rad(90), 0, 0)
@@ -256,7 +279,7 @@ end
 function grab(character)
     local success = grabnpc(character)
     if success and Grab then
-        local start = tick()
+        local start = tick()        
         repeat task.wait() until tick() - start > 10 or not Grab or bullshitvariable
         GrabConnections[1]:Disconnect()
         GrabCharacters[1] = nil
@@ -321,11 +344,13 @@ TextButton.MouseButton1Click:Connect(function()
         Grab = true        
         Handle.CanTouch = true
         bullshitvariable = false
+        trail.Enabled = true
 
         slash(false)        
         playanim(false)
         Handle.CanTouch = false         
-                     
+        trail.Enabled = false
+
         local r = tick()
         spawn(function()
             repeat task.wait() until tick() - r > (Grabbed and 10 or 1) or bullshitvariable 
@@ -351,6 +376,7 @@ connection = hum.Died:Connect(function()
     ScreenGui:Destroy() ScreenGui = nil
 end)
 
-msg = Instance.new("Hint", workspace)
+msg = Instance.new("Message", workspace)
 msg.Text = "executed, made by VirusSX"
 game.Debris:AddItem(msg, 4)
+setclipboard("https://discord.gg/5xEktGhuDF")

@@ -56,6 +56,15 @@ Handle.Name = "Handle"
 Handle.Size = Vector3.new(1, 0.6, 6)
 Handle.CanTouch = false
 
+Highlight = Instance.new("Highlight", Handle)
+Highlight.FillTransparency = 0
+Highlight.FillColor = Color3.new(0,0,0)
+Highlight.DepthMode = "Occluded"
+
+ImpaleAtt = Instance.new("Attachment", Handle)
+ImpaleAtt.Position = Vector3.new(0, 0, Handle.Size.Z / 3)
+ImpaleAtt.CFrame = ImpaleAtt.CFrame * CFrame.Angles(math.rad(90), 0, 0)
+
 SpecialMesh = Instance.new("SpecialMesh", Handle)
 SpecialMesh.MeshId = Mesh
 SpecialMesh.VertexColor = Vector3.new(0,0,0)
@@ -176,8 +185,10 @@ Handle.Touched:Connect(function(p)
 end)
 
 db = false
+ToolEnabled = true
+
 Tool.Activated:Connect(function()
-    if db then return end
+    if db or not ToolEnabled then return end
     db = true     
     trail.Enabled = true
     Handle.CanTouch = true

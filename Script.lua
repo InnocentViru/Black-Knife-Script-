@@ -5,13 +5,22 @@ hrp = char.HumanoidRootPart
 
 rs = game.RunService
 
+ToolEnabled = true
+ToolUsing = false
+Grab = false
+GrabConnections = {}
+GrabCharacters = {}
+bullshitvariable = false
+Grabbed = false
+
 function checknotr15()
     return hum.RigType ~= Enum.HumanoidRigType.R15
 end
 
-if not checknotr15 then
-    Instance.new("Hint", workspace).Text = "you're not r6"
-    game.Debris:AddItem(workspace.Message, 4)
+if not checknotr15() then
+    msg = Instance.new("Hint", workspace)
+    msg.Text = "you're not r6"
+    game.Debris:AddItem(msg, 2)
     return
 end
 
@@ -74,6 +83,7 @@ SpecialMesh.Scale = Vector3.new(2.2,2.2,2.2)
 vfx = Instance.new("ParticleEmitter", Handle)
 vfx.Rate = 100
 vfx.Speed = NumberRange.new(0,0)
+vfx.Brightness = 10
 vfx.Lifetime = NumberRange.new(.5, .5)
 vfx.Color = ColorSequence.new(Color3.new(0,0,0))
 vfx.Size = NumberSequence.new({
@@ -105,12 +115,32 @@ trail.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(1, 1),
 })
 
-function playanim()
+pcall(function() plr.PlayerGui["Grab_Ability"]:Destroy() end)
+ScreenGui = Instance.new("ScreenGui", plr.PlayerGui)
+ScreenGui.Name = "Grab_Ability"
+TextButton = Instance.new("TextButton", ScreenGui)
+UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint", TextButton)
+UIStroke = Instance.new("UIStroke", TextButton)
+
+TextButton.Text = "Impale (Grab)"
+TextButton.Size = UDim2.fromScale(.12, .12)
+TextButton.AnchorPoint = Vector2.new(.5,.5)
+TextButton.Position = UDim2.fromScale(.8, .5)
+TextButton.Font = "Arcade"
+TextButton.TextScaled = true
+TextButton.TextColor3 = Color3.new(1,1,1)
+TextButton.BackgroundColor3 = Color3.new(0,0,0)
+
+UIStroke.Thickness = 3
+UIStroke.ApplyStrokeMode = "Border"
+UIStroke.Color = Color3.new(1,1,1)
+
+function playanim(booleangrab)
     local random = anims[math.random(1, #anims)]
     local anim = Instance.new("Animation")
     anim.AnimationId = random
     local tr = hum:LoadAnimation(anim)
-    tr:Play(0, 5, 1.5)
+    tr:Play(0, 5, booleangrab and 1.5 or 1)
     tr.Ended:Wait()
 end
 
@@ -144,6 +174,38 @@ function blood(phrp)
     end
 end
 
+function bleed(phrp, phum)
+    for i = 1, 30 do
+        if not phum or not phum.Parent or phum.Health <= 0 then break end
+        local p = Instance.new("Part", workspace)
+        p.Name = "blood" .. i
+        p.Material = "Neon"
+        p.Color = Color3.new(1,0,0)
+        p.CFrame = phrp.CFrame * CFrame.new(0,0,-.5)
+        p.Size = Vector3.new(.5,.5,.5)
+        p.RotVelocity = Vector3.new(20,20,20)
+        p.Velocity = Vector3.new(0, 10, 0)
+
+        local at = Instance.new("Attachment", p)
+        local at2 = Instance.new("Attachment", p)
+        at.Position = Vector3.new(0, p.Size.Y / 2, 0)
+        at2.Position = Vector3.new(0, -(p.Size.Y / 2), 0)
+        local tra = Instance.new("Trail", p)
+        tra.Attachment0 = at
+        tra.Attachment1 = at2
+        tra.Brightness = 10
+        tra.WidthScale = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),    
+            NumberSequenceKeypoint.new(1, 0),
+        })
+        tra.Color = ColorSequence.new(Color3.new(1,0,0))
+        tra.Lifetime = 1.5
+        tra.FaceCamera = true
+        game.Debris:AddItem(p,6)
+        task.wait(.1)
+    end
+end
+
 function killsfx(p)
     local sound = Instance.new("Sound", p)
     sound.SoundId = getcustomasset("ThornRing.mp3")
@@ -158,47 +220,126 @@ function killnpc(character)
     local p = character:FindFirstChild("HumanoidRootPart")
     if h and p and not game.Players:GetPlayerFromCharacter(character) 
     and p.ReceiveAge == 0 and h.Health > 0 then
-        h:TakeDamage(9e9)
-        h:ChangeState("Died")
-        h.Health = -1
-        blood(p)
-        killsfx(p)
+        if not Grab then
+            h:TakeDamage(9e9)
+            h:ChangeState("Died")
+            h.Health = -1
+            blood(p)
+            killsfx(p)
+        end
     end
 end
 
-function slash()
+function grabnpc(character)
+    local h = character:FindFirstChild("Humanoid")
+    local p = character:FindFirstChild("HumanoidRootPart")
+    local success = false
+
+    if h and p and not game.Players:GetPlayerFromCharacter(character) 
+    and p.ReceiveAge == 0 and h.Health > 0 and not GrabCharacters[1] 
+    and not GrabConnections[1] then
+        GrabCharacters[1] = character
+        success = true
+        Grabbed = true
+        task.spawn(bleed, p, h)
+        GrabConnections[1] = rs.Heartbeat:Connect(function()
+            if Tool.Parent == char and p.ReceiveAge == 0 then
+                p.CFrame = CFrame.new(ImpaleAtt.WorldPosition) * CFrame.Angles(math.rad(90), 0, 0)
+                p.Velocity = Vector3.zero
+            end
+        end)
+    end
+
+    return success
+end
+
+function grab(character)
+    local success = grabnpc(character)
+    if success and Grab then
+        local start = tick()
+        repeat task.wait() until tick() - start > 10 or not Grab or bullshitvariable
+        GrabConnections[1]:Disconnect()
+        GrabCharacters[1] = nil
+        table.clear(GrabCharacters)
+        table.clear(GrabConnections)    
+        Grabbed = false
+    end
+end
+
+function slash(booleangrab)
     local sound = Instance.new("Sound", Handle)
     sound.SoundId = Slash
     sound.Volume = 5
     sound.PlayOnRemove = true
+    sound.Pitch = booleangrab and 1 or .8
 
     Instance.new("ReverbSoundEffect", sound).DecayTime = 2.5
     sound:Destroy()
     sound = nil
 end
 
-Handle.Touched:Connect(function(p)
+Handle.Touched:Connect(function(p)    
     local character = p:FindFirstAncestorOfClass("Model")
     if character and character ~= char then
-        killnpc(character)
+        if not Grab then 
+            killnpc(character)
+        else 
+            grab(character)
+        end
     end
 end)
 
 db = false
-ToolEnabled = true
+db2 = false
 
 Tool.Activated:Connect(function()
-    if db or not ToolEnabled then return end
+    if db or db2 or not ToolEnabled or Grab then return end
     db = true     
     trail.Enabled = true
     Handle.CanTouch = true
-    slash()
+    slash(true)
+    ToolUsing = true
 
-    playanim()
-    delay(.2, function() db = false end)
+    playanim(true)
+    delay(.2, function() db = false ToolUsing = false end)
 
     Handle.CanTouch = false
     trail.Enabled = false
+end)
+
+
+TextButton.MouseButton1Click:Connect(function()
+    if GrabConnections[1] then        
+        bullshitvariable = true
+        return
+    end
+    if not db2 and not ToolUsing and not GrabConnections[1] then
+        db2 = true        
+        ToolEnabled = false
+
+        Grab = true        
+        Handle.CanTouch = true
+        bullshitvariable = false
+
+        slash(false)        
+        playanim(false)
+        Handle.CanTouch = false         
+                     
+        local r = tick()
+        spawn(function()
+            repeat task.wait() until tick() - r > (Grabbed and 10 or 3) or bullshitvariable 
+            if bullshitvariable then
+                task.wait(.8)
+                db2 = false             
+                Grab = false
+                ToolEnabled = true
+            else
+                db2 = false             
+                Grab = false
+                ToolEnabled = true
+            end
+        end)
+    end
 end)
 
 connection = hum.Died:Connect(function()
@@ -206,7 +347,9 @@ connection = hum.Died:Connect(function()
     getgenv().roaringknight:Disconnect() getgenv().roaringknight = nil
     pcall(function() Tool:Destroy() end)
     plr.ReplicationFocus = nil
+    ScreenGui:Destroy() ScreenGui = nil
 end)
 
-Instance.new("Hint", workspace).Text = "executed, made by VirusSX"
-game.Debris:AddItem(workspace.Message, 4)
+msg = Instance.new("Hint", workspace)
+msg.Text = "executed, made by VirusSX"
+game.Debris:AddItem(msg, 4)

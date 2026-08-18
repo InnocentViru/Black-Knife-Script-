@@ -116,7 +116,7 @@ trail.Transparency = NumberSequence.new({
 })
 
 pcall(function() plr.PlayerGui["Grab_Ability"]:Destroy() end)
-ScreenGui = Instance.new("ScreenGui", plr.PlayerGui)
+ScreenGui = Instance.new("ScreenGui", gethui())
 ScreenGui.Name = "Grab_Ability"
 TextButton = Instance.new("TextButton", ScreenGui)
 UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint", TextButton)
@@ -313,7 +313,8 @@ TextButton.MouseButton1Click:Connect(function()
         bullshitvariable = true
         return
     end
-    if not db2 and not ToolUsing and not GrabConnections[1] then
+    if not db2 and not ToolUsing and not GrabConnections[1] 
+    and Tool.Parent == char then
         db2 = true        
         ToolEnabled = false
 
@@ -327,7 +328,7 @@ TextButton.MouseButton1Click:Connect(function()
                      
         local r = tick()
         spawn(function()
-            repeat task.wait() until tick() - r > (Grabbed and 10 or 3) or bullshitvariable 
+            repeat task.wait() until tick() - r > (Grabbed and 10 or 1) or bullshitvariable 
             if bullshitvariable then
                 task.wait(.8)
                 db2 = false             

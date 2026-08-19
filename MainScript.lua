@@ -54,7 +54,7 @@ end)
 
 plr.ReplicationFocus = workspace
 getgenv().roaringknight = rs.Heartbeat:Connect(function()
-    sethiddenproperty(plr, "MaxSimulationRadius", math.huge)
+    sethiddenproperty(plr, "MaximumSimulationRadius", math.huge)
     sethiddenproperty(plr, "SimulationRadius", math.huge)
 end)
 
